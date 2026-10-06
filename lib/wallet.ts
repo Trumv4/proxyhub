@@ -1,5 +1,6 @@
 import {ShopError} from "./proxy-rules";
 import {encryptCredentials,decryptCredentials} from "./proxy-crypto";
+import {bankIsActive} from "./payment-links";
 type Config={enabled:boolean;bankId:string;accountNumber:string;holder:string;bank:string;token:string};
 type Topup={id:string;customer_id:string;code:string;amount:number;status:string;created:number;expires:number;checked:number;bank_id:string;account_number:string};
 type Transaction={id:string;bank_account_id:string;account_number:string;transfer_type:string;amount_in:number;amount_out:number;transaction_date:string;transaction_content:string;code?:string|null};
@@ -11,7 +12,8 @@ export async function walletBalance(db:D1Database,userId:string){return (await s
 export async function walletSnapshot(db:D1Database,userId:string,isAdmin:boolean){
  const row=await sql(db,"SELECT value FROM shop_settings WHERE key='sepay_config'").first<{value:string}>();const c=row?JSON.parse(row.value):{};
  const ledger=(await sql(db,"SELECT id,amount,kind,reference,created FROM wallet_entries WHERE customer_id=? ORDER BY created DESC LIMIT 100",userId).all()).results;
- const topups=(await sql(db,"SELECT id,code,amount,status,created,expires,checked,credited,note FROM topups WHERE customer_id=? ORDER BY created DESC LIMIT 50",userId).all()).results;
+ const topupRows=(await sql(db,"SELECT id,code,amount,status,created,expires,checked,credited,note,bank_id,account_number FROM topups WHERE customer_id=? ORDER BY created DESC LIMIT 50",userId).all()).results;
+ const topups=topupRows.map(({bank_id,account_number,...t})=>({...t,payment:t.status==="PENDING"&&Number(t.expires)>Date.now()&&c.enabled&&bank_id===c.bankId&&account_number===c.accountNumber?{bank:c.bank,number:account_number,holder:c.holder}:null}));
  const review=isAdmin?(await sql(db,"SELECT t.id,t.code,t.amount,t.status,t.note,t.created,c.email FROM topups t JOIN customers c ON c.id=t.customer_id WHERE t.status='REVIEW' ORDER BY t.created DESC LIMIT 100").all()).results:[];
  return {wallet:{balance:await walletBalance(db,userId),ledger,topups,review,sepay:{enabled:!!c.enabled,bank:c.bank??"",holder:c.holder??"",accountNumber:c.accountNumber??"",...isAdmin?{bankId:c.bankId??"",hasToken:!!c.token}:{}}}};
 }
@@ -37,8 +39,8 @@ export async function walletAction(db:D1Database,key:string,userId:string,payloa
   const bankId=String(payload.bankId),token=typeof payload.token==="string"&&payload.token.trim()?payload.token.trim():previous.token;
   if(!UUID.test(bankId)||!token||token.length>4096)throw new ShopError("Nhập API Token và UUID tài khoản ngân hàng SePay.");
   if(previous.bankId&&previous.bankId!==bankId&&(await sql(db,"SELECT COUNT(*) n FROM topups WHERE status='PENDING'").first<{n:number}>())?.n)throw new ShopError("Còn yêu cầu nạp tiền chờ. Hãy đối soát trước khi đổi ngân hàng.");
-  const bank=await sepay<{id:string;account_number:string;account_holder_name:string;bank_short_name:string;active:number}>("/bank-accounts/"+encodeURIComponent(bankId),token);
-  if(bank.id!==bankId||!bank.account_number||!bank.account_holder_name||bank.active!==1)throw new ShopError("Tài khoản ngân hàng SePay chưa hoạt động hoặc không hợp lệ.");
+  const bank=await sepay<{id:string;account_number:string;account_holder_name:string;bank_short_name:string;active:unknown}>("/bank-accounts/"+encodeURIComponent(bankId),token);
+  if(bank.id!==bankId||!bank.account_number||!bank.account_holder_name||!bank.bank_short_name||!bankIsActive(bank.active))throw new ShopError("Tài khoản ngân hàng SePay chưa hoạt động hoặc không hợp lệ.");
   await sql(db,"INSERT INTO shop_settings(key,value) VALUES('sepay_config',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",JSON.stringify({enabled:true,bankId,accountNumber:bank.account_number,holder:bank.account_holder_name,bank:bank.bank_short_name,token:await encryptCredentials({user:"",password:token},key)})).run();return {message:"Đã xác nhận ngân hàng và bật nạp tiền SePay."};
  });
  if(payload.action==="create-topup")return paymentLock(db,async()=>{

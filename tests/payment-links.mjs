@@ -1,0 +1,15 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import {pathToFileURL} from "node:url";
+import {build} from "esbuild";
+fs.mkdirSync(".sites-runtime/tests",{recursive:true});
+await build({entryPoints:["lib/payment-links.ts"],outfile:".sites-runtime/tests/payment-links.mjs",bundle:true,platform:"node",format:"esm"});
+const {paymentQr,bankAppLink}=await import(pathToFileURL(path.resolve(".sites-runtime/tests/payment-links.mjs")));
+const account={bank:"MSB",number:"0123456789",holder:"FIXTURE RECEIVER"},code="PHN"+"A".repeat(20);
+const qr=new URL(paymentQr(account,30000,code));assert.equal(qr.origin,"https://vietqr.app");assert.equal(qr.searchParams.get("acc"),account.number);assert.equal(qr.searchParams.get("bank"),"MSB");assert.equal(qr.searchParams.get("amount"),"30000");assert.equal(qr.searchParams.get("des"),code);
+assert.equal(new URL(paymentQr(account,30000,code,true)).searchParams.get("download"),"true");
+assert.equal(paymentQr({...account,number:"12&acc=other"},30000,code),null);assert.equal(paymentQr(account,30000.5,code),null);assert.equal(paymentQr(account,30000,"wrong memo"),null);
+assert.equal(bankAppLink("javascript:alert(1)",account,30000,code),null);
+const link=new URL(bankAppLink("vcb",account,30000,code));assert.equal(link.origin,"https://dl.vietqr.io");assert.equal(link.searchParams.get("app"),"vcb");assert.equal(link.searchParams.get("ba"),account.number+"@MSB");assert.equal(link.searchParams.get("am"),"30000");assert.equal(link.searchParams.get("tn"),code);
+console.log("PASS: QR amount, receiver, memo, download and app allowlist; invalid payment data rejected.");
