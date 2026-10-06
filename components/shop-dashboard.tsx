@@ -33,7 +33,7 @@ export function useShop(){
  const action=useCallback(async(payload:Record<string,unknown>):Promise<Result>=>{setBusy(true);try{const response=await fetch("/api/shop",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const result=await response.json() as Result & {error?:string};if(!response.ok)throw new Error(result.error??"Không xử lý được yêu cầu.");await reload();return result;}finally{setBusy(false);}},[reload]);
  return {data,error,loading,busy,reload,action};
 }
-export type Shop=ReturnType<typeof useShop>&{preview?:boolean};
+export type Shop=ReturnType<typeof useShop>&{preview?:boolean;exitPreview?:(amount?:string)=>void;topupDraft?:string|null};
 export function ShopPurchase({shop,code,close,onNotice}:{shop:Shop;code:string|null;close:()=>void;onNotice:(message:string,delivered?:boolean)=>void}){
  const [paymentMethod,setPaymentMethod]=useState<string|null>(null);
  const [countText,setCountText]=useState("1"),[error,setError]=useState("");const requestId=useRef("");
