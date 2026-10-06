@@ -22,7 +22,7 @@ export async function authAction(db:D1Database,pepper:string,adminEmail:string,r
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254||password.length>128||password.length<1)throw new ShopError("Kiểm tra email và mật khẩu.");
  const ip=request.headers.get("cf-connecting-ip")??"unknown";await rate(db,"ip:"+await hashToken(ip),30);await rate(db,"email:"+await hashToken(email),10);
  if(payload.action==="register"){
-  const name=typeof payload.name==="string"?payload.name.trim():"";if(name.length<2||name.length>80||password.length<12)throw new ShopError("Tên từ 2–80 ký tự; mật khẩu từ 12–128 ký tự.");
+  const name=typeof payload.name==="string"?payload.name.trim():"";if(name.length<2||name.length>80||password.length<8)throw new ShopError("Tên từ 2–80 ký tự; mật khẩu từ 8–128 ký tự.");
   const isOwner=email===adminEmail.toLowerCase()&&owner?.email.toLowerCase()===email;
   if(email===adminEmail.toLowerCase()&&!isOwner||await db.prepare("SELECT customer_id FROM auth_accounts WHERE email=?").bind(email).first())throw new ShopError("Email này không thể đăng ký. Hãy đăng nhập hoặc dùng email khác.",409);
   const id=isOwner?owner!.userId:"local-"+crypto.randomUUID(),salt=hex(crypto.getRandomValues(new Uint8Array(32))),hash=await passwordHash(password,salt,pepper);
@@ -33,3 +33,4 @@ export async function authAction(db:D1Database,pepper:string,adminEmail:string,r
  const hash=await passwordHash(password,account?.salt??"00".repeat(32),pepper);if(!account||!equal(hash,account.password_hash))throw new ShopError("Email hoặc mật khẩu không đúng.",401);
  await db.prepare("DELETE FROM auth_limits WHERE id=?").bind("email:"+await hashToken(email)).run();return {cookie:await session(db,account.customer_id),message:"Đã đăng nhập."};
 }
+
