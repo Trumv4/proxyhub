@@ -14,6 +14,15 @@ export async function sellerSnapshot(db:D1Database,user:User){
 }
 export async function sellerAction(db:D1Database,key:string,user:User,payload:Record<string,unknown>){
  const sql=(query:string,...args:unknown[])=>db.prepare(query).bind(...args),action=String(payload.action);
+ if(action==="seller-grant"){
+  if(!user.isAdmin)throw new ShopError("Chỉ quản trị viên được cấp quyền CTV.",403);
+  const email=String(payload.email??"").trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254)throw new ShopError("Nhập email đăng ký hợp lệ.");
+  const account=await sql("SELECT a.customer_id,a.role,c.name FROM auth_accounts a JOIN customers c ON c.id=a.customer_id WHERE a.email=?",email).first<{customer_id:string;role:string;name:string}>();
+  if(!account)throw new ShopError("Email này chưa đăng ký tài khoản trên web. Yêu cầu CTV đăng ký trước.",404);
+  if(account.role!=="CUSTOMER")throw new ShopError("Tài khoản quản trị không cần cấp quyền CTV.");
+  await sql("INSERT INTO sellers(customer_id,role,active,created) VALUES(?,'SELLER',1,?) ON CONFLICT(customer_id) DO UPDATE SET active=1",account.customer_id,Date.now()).run();
+  return {message:`Đã cấp quyền CTV cho ${account.name} (${email}). CTV tải lại trang để vào gian hàng.`};
+ }
  if(action==="seller-invite"){
   if(!user.isAdmin)throw new ShopError("Chỉ quản trị viên được cấp quyền CTV.",403);
   const email=String(payload.email??"").trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new ShopError("Nhập email CTV hợp lệ.");

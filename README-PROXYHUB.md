@@ -68,3 +68,5 @@ Owner Dashboard → CTV / Kiểm duyệt creates a single-use, email-bound invit
 Seller orders capture the seller and 5% fee per unit when created, rounded to VND. Successful fulfilment records gross/fee/net in the same transaction as delivery (and wallet debit when applicable). Failed or cancelled delivery records no seller revenue. The CTV dashboard displays revenue for reconciliation; it does not execute bank payouts. Proxy allocation and warranty reserves remain scoped to the seller product.
 
 The Site remains owner-private for testing. GitHub CI includes tests/auth-sellers.mjs with isolated account, permission, fee, rollback and price fixtures. No fixture account or funds are added to production.
+
+CTV update: owner now grants directly by an existing auth_accounts registered email. No account is created implicitly, no invitation entry is required in the customer UI, and only the owner can grant. Legacy issued invites remain compatible.
