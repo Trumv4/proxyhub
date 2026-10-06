@@ -58,3 +58,13 @@ Khách vào Ví và nạp tiền, tạo mã PHN (mỗi yêu cầu một mã), ch
 Ví dùng sổ giao dịch với mã tham chiếu duy nhất. Mua bằng số dư trừ tiền và cấp hàng trong cùng một D1 batch có guard; kho thiếu hoặc batch lỗi không mất tiền. Đơn ví không được admin duyệt như đơn thủ công. Giá đơn chốt khi tạo; retry cùng request ID không trừ lại. Khách chỉ đọc ví, yêu cầu nạp và nội dung hàng của mình. Không có thao tác cộng tiền thủ công hoặc hoàn tiền ngân hàng trong bản này; REVIEW cần kiểm tra giao dịch thực.
 
 Chưa có API Token hoặc giao dịch thật để kiểm thử Production. Kiểm thử ví/SePay dùng dữ liệu và phản hồi API cách ly; cần test nạp thật số tiền nhỏ sau khi cấu hình.
+
+## Email accounts and CTV (2026-10-06)
+
+Header and mobile menu expose email/password sign-in and registration. Passwords use salted PBKDF2 plus a server-side HMAC pepper; raw passwords and session cookies are never stored or logged. Sessions expire after 7 days and logout revokes the active session. The existing authenticated owner can register the same owner email to link a local admin login without losing old data; another user cannot claim that email to become admin. Email verification and email password recovery are not configured.
+
+Owner Dashboard → CTV / Kiểm duyệt creates a single-use, email-bound invite expiring in 7 days. An invited CTV can upload only their own proxy or digital inventory. Creating/editing products sets PENDING and disables sales until owner approval. CTV cannot approve products, configure banking, approve payments or read other CTV stock. Revoking a CTV disables sales and unused invites. This release keeps moderation with the owner.
+
+Seller orders capture the seller and 5% fee per unit when created, rounded to VND. Successful fulfilment records gross/fee/net in the same transaction as delivery (and wallet debit when applicable). Failed or cancelled delivery records no seller revenue. The CTV dashboard displays revenue for reconciliation; it does not execute bank payouts. Proxy allocation and warranty reserves remain scoped to the seller product.
+
+The Site remains owner-private for testing. GitHub CI includes tests/auth-sellers.mjs with isolated account, permission, fee, rollback and price fixtures. No fixture account or funds are added to production.

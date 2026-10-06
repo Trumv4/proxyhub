@@ -1,4 +1,4 @@
 import {shopAction,shopSnapshot,shopFailure} from "@/lib/shop-service";
 export const dynamic="force-dynamic";
-export async function GET(){try{return Response.json(await shopSnapshot(),{headers:{"Cache-Control":"no-store"}});}catch(e){return shopFailure(e);}}
+export async function GET(request:Request){try{return Response.json(await shopSnapshot(request),{headers:{"Cache-Control":"no-store"}});}catch(e){return shopFailure(e);}}
 export async function POST(request:Request){try{if(Number(request.headers.get("content-length")??0)>300000)return Response.json({error:"Yêu cầu quá lớn."},{status:413});const raw=await request.text();if(raw.length>300000)return Response.json({error:"Yêu cầu quá lớn."},{status:413});const payload=JSON.parse(raw);if(!payload||typeof payload!=="object"||Array.isArray(payload))return Response.json({error:"Yêu cầu không hợp lệ."},{status:400});return Response.json(await shopAction(request,payload),{headers:{"Cache-Control":"no-store"}});}catch(e){return shopFailure(e);}}

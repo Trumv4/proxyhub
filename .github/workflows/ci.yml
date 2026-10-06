@@ -20,4 +20,5 @@ jobs:
       - name: Isolated shop, wallet and proxy tests
         run: node tests/run-shop.mjs
       - run: node tests/payment-links.mjs
+      - run: node tests/auth-sellers.mjs
       - run: npm run build
