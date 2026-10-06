@@ -9,7 +9,7 @@ import "./customer-preview.css";
 import "./wallet.css";
 
 export const metadata: Metadata = {
-  title: "ProxyHub — Proxy & bảo hành 30 ngày",
+  title: "ProxyVIP — Proxy & bảo hành 30 ngày",
   description: "Giao diện mua và quản lý proxy HTTP, SOCKS5 cùng bảo hành thay thế 30 ngày.",
   other: {
     "codex-preview": "development",
@@ -32,3 +32,4 @@ export default function RootLayout({
     </html>
   );
 }
+
