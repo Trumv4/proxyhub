@@ -43,6 +43,13 @@
       "when": 1791291960421,
       "tag": "0005_brown_drax",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1791350909639,
+      "tag": "0006_warm_legion",
+      "breakpoints": true
     }
   ]
 }
