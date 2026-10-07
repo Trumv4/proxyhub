@@ -7,10 +7,11 @@ import "./stat-links.css";
 import "./digital.css";
 import "./customer-preview.css";
 import "./wallet.css";
+import "./marketplace.css";
 
 export const metadata: Metadata = {
-  title: "ProxyVIP — Proxy & bảo hành 30 ngày",
-  description: "Giao diện mua và quản lý proxy HTTP, SOCKS5 cùng bảo hành thay thế 30 ngày.",
+  title: "Tạp Hóa VIP — Cửa hàng sản phẩm số",
+  description: "Cửa hàng tài khoản, key, proxy và sản phẩm số. Thanh toán qua ví, theo dõi đơn hàng và hỗ trợ qua Zalo.",
   other: {
     "codex-preview": "development",
   },
@@ -32,4 +33,3 @@ export default function RootLayout({
     </html>
   );
 }
-
