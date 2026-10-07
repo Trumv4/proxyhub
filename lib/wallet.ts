@@ -69,7 +69,7 @@ export async function walletAction(db:D1Database,key:string,userId:string,payloa
   return {message:"Đã duyệt đối soát và cộng tiền vào ví khách.",credited:1};
  });
  if(payload.action==="create-topup")return paymentLock(db,async()=>{
-  const c=await config(db,key),amount=Number(payload.amount);if(!c.enabled||!c.token)throw new ShopError("Nạp tiền SePay chưa được bật.");if(!Number.isSafeInteger(amount)||amount<1000||amount>100000000||!UUID.test(String(payload.requestId)))throw new ShopError("Số tiền nạp từ 1.000 đến 100.000.000đ, mã yêu cầu hợp lệ.");
+  const c=await config(db,key),amount=Number(payload.amount);if(!c.enabled||!c.token)throw new ShopError("Nạp tiền SePay chưa được bật.");if(!Number.isSafeInteger(amount)||amount<5000||amount>100000000||!UUID.test(String(payload.requestId)))throw new ShopError("Số tiền nạp từ 5.000 đến 100.000.000đ, mã yêu cầu hợp lệ.");
   const existing=await sql(db,"SELECT id FROM topups WHERE customer_id=? AND request_id=?",userId,payload.requestId).first<{id:string}>();if(existing)return {message:"Yêu cầu nạp tiền đã được tạo.",id:existing.id};
   const pending=await sql(db,"SELECT COUNT(*) n FROM topups WHERE customer_id=? AND status='PENDING'",userId).first<{n:number}>();if((pending?.n??0)>=3)throw new ShopError("Bạn đang có 3 yêu cầu nạp chờ. Hãy đối soát trước.");
   const id=crypto.randomUUID(),code="PHN"+crypto.randomUUID().replaceAll("-","").slice(0,20).toUpperCase();
