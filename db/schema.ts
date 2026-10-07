@@ -23,7 +23,7 @@ export const locks=sqliteTable("locks",{id:text("id").primaryKey(),owner:text("o
 // A false precondition aborts the whole D1 batch; successful guard rows are removed in that same batch.
 export const guards=sqliteTable("transaction_guards",{id:text("id").primaryKey(),valid:integer("valid").notNull()},t=>[check("valid_transaction",sql`${t.valid} = 1`)]);
 
-export const announcements=sqliteTable("announcements",{id:text("id").primaryKey(),title:text("title").notNull(),message:text("message").notNull(),active:integer("active").notNull().default(1),created:integer("created").notNull()});
+export const announcements=sqliteTable("announcements",{image:text("image").notNull().default(""),id:text("id").primaryKey(),title:text("title").notNull(),message:text("message").notNull(),active:integer("active").notNull().default(1),created:integer("created").notNull()});
 export const coupons=sqliteTable("coupons",{code:text("code").primaryKey(),kind:text("kind").notNull(),value:integer("value").notNull(),minTotal:integer("min_total").notNull().default(0),maxDiscount:integer("max_discount").notNull().default(0),product:text("product"),expires:integer("expires").notNull(),maxUses:integer("max_uses").notNull(),enabled:integer("enabled").notNull().default(1),created:integer("created").notNull()});
 export const couponUses=sqliteTable("coupon_uses",{orderId:text("order_id").primaryKey().references(()=>orders.id),code:text("code").notNull().references(()=>coupons.code),customerId:text("customer_id").notNull().references(()=>customers.id),created:integer("created").notNull()});
 

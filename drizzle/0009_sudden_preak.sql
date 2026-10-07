@@ -1,0 +1,1 @@
+ALTER TABLE `announcements` ADD `image` text DEFAULT '' NOT NULL;
