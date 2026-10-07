@@ -1,3 +1,4 @@
+import {validateProductSku} from "./product-sku";
 import {ShopError} from "./proxy-rules";
 import {encryptCredentials,decryptCredentials,fingerprint} from "./proxy-crypto";
 
@@ -16,15 +17,16 @@ export async function digitalAction(db:D1Database,key:string,userId:string,paylo
   const instructions=await sql("SELECT value FROM shop_settings WHERE key='payment_instructions'").first<{value:string}>();
   if(payload.enabled&&(instructions?.value.trim().length??0)<10)throw new ShopError("Lưu hướng dẫn thanh toán trước khi mở bán.");
   const code=typeof payload.code==="string"&&payload.code?payload.code:"item-"+crypto.randomUUID();
-  const current=await sql("SELECT kind FROM products WHERE code=?",code).first<{kind:string}>();
+  const current=await sql("SELECT kind,sku FROM products WHERE code=?",code).first<{kind:string;sku:string|null}>();
   if(current&&(current.kind==="PROXY"||current.kind!==kind))throw new ShopError("Không đổi loại sản phẩm đã tạo. Hãy tạo sản phẩm mới.");
   const total=await sql("SELECT COUNT(*) n FROM products WHERE kind<>'PROXY'").first<{n:number}>();
   if(!current&&(total?.n??0)>=100)throw new ShopError("Tối đa 100 sản phẩm khác.");
-  await sql("INSERT INTO products(code,name,protocol,price,enabled,kind,description) VALUES(?,?,'DIGITAL',?,?,?,?) ON CONFLICT(code) DO UPDATE SET name=excluded.name,price=excluded.price,enabled=excluded.enabled,description=excluded.description",code,name,price,payload.enabled?1:0,kind,description).run();
+  const sku=await validateProductSku(db,code,payload.sku,current?.sku);
+  await sql("INSERT INTO products(code,name,protocol,price,enabled,kind,description,sku) VALUES(?,?,'DIGITAL',?,?,?,?,?) ON CONFLICT(code) DO UPDATE SET name=excluded.name,price=excluded.price,enabled=excluded.enabled,description=excluded.description,sku=excluded.sku",code,name,price,payload.enabled?1:0,kind,description,sku).run();
   return {message:"Đã lưu sản phẩm."};
  }
  if(payload.action==="import-items"){
-  const product=await sql("SELECT kind FROM products WHERE code=? AND kind<>'PROXY'",String(payload.product)).first<{kind:string}>();if(!product)throw new ShopError("Chọn sản phẩm trước khi nhập kho.");
+  const product=await sql("SELECT kind,sku FROM products WHERE code=? AND kind<>'PROXY'",String(payload.product)).first<{kind:string;sku:string|null}>();if(!product)throw new ShopError("Chọn sản phẩm trước khi nhập kho.");
   if(typeof payload.text!=="string"||payload.text.length>200000)throw new ShopError("Danh sách tối đa 200 KB.");
   const rows=payload.text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);if(!rows.length||rows.length>500||rows.some(s=>s.length>4000))throw new ShopError("Nhập 1–500 dòng, mỗi dòng là một sản phẩm (tối đa 4.000 ký tự).");
   if(product.kind==="LINK"||product.kind==="FILE_LINK")for(const row of rows){try{const url=new URL(row);if(!["https:","http:"].includes(url.protocol)||url.username||url.password)throw new Error();}catch{throw new ShopError("Mỗi dòng phải là một link HTTP hoặc HTTPS hợp lệ.");}}

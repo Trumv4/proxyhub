@@ -78,6 +78,13 @@
       "when": 1791368064759,
       "tag": "0010_dusty_dragon_man",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1791376758331,
+      "tag": "0011_foamy_demogoblin",
+      "breakpoints": true
     }
   ]
 }

@@ -1,3 +1,4 @@
+import {validateProductSku} from "./product-sku";
 import {ShopError,parseProxyLines} from "./proxy-rules";
 import {encryptCredentials,fingerprint} from "./proxy-crypto";
 import {digitalAction,deliveryKinds} from "./digital-products";
@@ -45,12 +46,13 @@ export async function sellerAction(db:D1Database,key:string,user:User,payload:Re
  }
  const membership=await sql("SELECT active FROM sellers WHERE customer_id=?",user.userId).first<{active:number}>();if(!membership?.active)throw new ShopError("Bạn chưa được cấp quyền CTV hoặc quyền đã bị khóa.",403);
  if(action==="seller-save"){
-  const code=String(payload.code??"")||"seller-"+crypto.randomUUID(),current=await sql("SELECT seller_id,kind,protocol FROM products WHERE code=?",code).first<{seller_id:string;kind:string;protocol:string}>();if(current&&current.seller_id!==user.userId)throw new ShopError("Không được sửa sản phẩm của người khác.",403);
+  const code=String(payload.code??"")||"seller-"+crypto.randomUUID(),current=await sql("SELECT seller_id,kind,protocol,sku FROM products WHERE code=?",code).first<{seller_id:string;kind:string;protocol:string;sku:string|null}>();if(current&&current.seller_id!==user.userId)throw new ShopError("Không được sửa sản phẩm của người khác.",403);
   const name=String(payload.name??"").trim(),description=String(payload.description??"").trim(),kind=String(payload.kind),protocol=kind==="PROXY"?String(payload.protocol):"DIGITAL",price=Number(payload.price);
   if(!name||name.length>100||description.length>2000||!Number.isSafeInteger(price)||price<=0||price>10000000||![...deliveryKinds,"PROXY"].includes(kind)||kind==="PROXY"&&!["HTTP","SOCKS5"].includes(protocol))throw new ShopError("Kiểm tra tên, loại và giá sản phẩm (1–10.000.000đ).");
   if(current&&(current.kind!==kind||current.protocol!==protocol))throw new ShopError("Không đổi loại sản phẩm đã có kho.");
   if(!current&&(await sql("SELECT COUNT(*) n FROM products WHERE seller_id=?",user.userId).first<{n:number}>())!.n>=100)throw new ShopError("Tối đa 100 sản phẩm mỗi CTV.");
-  await sql("INSERT INTO products(code,name,protocol,price,enabled,kind,description,seller_id,review_state) VALUES(?,?,?,?,0,?,?,?,'PENDING') ON CONFLICT(code) DO UPDATE SET name=excluded.name,price=excluded.price,description=excluded.description,enabled=0,review_state='PENDING',review_note=''",code,name,protocol,price,kind,description,user.userId).run();return {message:"Đã gửi sản phẩm. Chờ quản trị viên duyệt mở bán."};
+  const sku=await validateProductSku(db,code,payload.sku,current?.sku);
+  await sql("INSERT INTO products(code,name,protocol,price,enabled,kind,description,seller_id,review_state,sku) VALUES(?,?,?,?,0,?,?,?,'PENDING',?) ON CONFLICT(code) DO UPDATE SET name=excluded.name,price=excluded.price,description=excluded.description,enabled=0,review_state='PENDING',review_note='',sku=excluded.sku",code,name,protocol,price,kind,description,user.userId,sku).run();return {message:"Đã gửi sản phẩm. Chờ quản trị viên duyệt mở bán."};
  }
  if(action==="seller-import"){
   const product=await sql("SELECT kind,protocol FROM products WHERE code=? AND seller_id=?",String(payload.product),user.userId).first<{kind:string;protocol:string}>();if(!product)throw new ShopError("Chỉ nhập kho sản phẩm của bạn.",403);
