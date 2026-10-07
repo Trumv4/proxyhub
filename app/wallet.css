@@ -7,3 +7,4 @@
 
 .transfer-confirm{display:grid;gap:12px;margin:20px 0}.transfer-confirm>[data-slot=button]{width:100%;min-height:44px}.transfer-confirm p{font-size:12px;line-height:1.8}
 
+.users-panel{display:grid;gap:20px}.users-panel table{width:100%;min-width:780px;font-size:14px;text-align:left}.users-panel th,.users-panel td{padding:14px;vertical-align:top;border-bottom:1px solid #dde4f5}.dark .users-panel th,.dark .users-panel td{border-color:#453254}.users-panel small{font-size:12px;color:#8190aa}.users-panel>.panel-actions input{max-width:420px}.users-panel .wallet-summary article{padding:20px}.users-panel .wallet-form form{display:grid;gap:12px}

@@ -57,6 +57,13 @@
       "when": 1791353644699,
       "tag": "0007_tidy_korg",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1791357014368,
+      "tag": "0008_special_magdalene",
+      "breakpoints": true
     }
   ]
 }
