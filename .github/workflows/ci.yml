@@ -22,4 +22,5 @@ jobs:
       - run: node tests/payment-links.mjs
       - run: node tests/auth-sellers.mjs
       - run: node tests/promotions.mjs
+      - run: node tests/login-notice.mjs
       - run: npm run build

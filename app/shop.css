@@ -3,3 +3,5 @@
 
 .promotion-panel{display:grid;gap:20px;margin:24px 0}.announcement-card{padding:20px 0;border-bottom:1px solid var(--border)}.announcement-card p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;margin:12px 0}.announcement-card small{display:block;color:#98a1b4;margin-bottom:12px}.announcement-card h4{overflow-wrap:anywhere}
 
+.login-announcements{max-height:55vh;overflow:auto}.login-announcements .announcement-card:first-child{padding-top:0}
+

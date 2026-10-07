@@ -39,7 +39,7 @@ export async function shopSnapshot(request?:Request){
  const notifications=await all("SELECT id,message,created FROM notifications WHERE customer_id=? ORDER BY created DESC LIMIT 30",user.userId);
  const inventory=user.isAdmin?await all("SELECT id,host,port,protocol,region,state,health,failures,checked,latency,last_error,provider_expiry,archived FROM stock ORDER BY created DESC LIMIT 1000"):[];
  const runs=user.isAdmin?await all("SELECT * FROM runs ORDER BY created DESC LIMIT 10"):[];
- const sellerData=await sellerSnapshot(database(),user);return {...await promotionSnapshot(database(),user.isAdmin),...sellerData,...await walletSnapshot(database(),user.userId,user.isAdmin),...await digitalSnapshot(database(),user.userId,user.isAdmin),products,paymentInstructions,user:{email:user.email,name:user.displayName,isAdmin:user.isAdmin,isSeller:!!sellerData.seller.membership?.active,authMethod:user.authMethod},proxies,orders,history,notifications,inventory,runs};
+ const sellerData=await sellerSnapshot(database(),user);return {...await promotionSnapshot(database(),user.isAdmin),...sellerData,...await walletSnapshot(database(),user.userId,user.isAdmin),...await digitalSnapshot(database(),user.userId,user.isAdmin),products,paymentInstructions,user:{email:user.email,name:user.displayName,isAdmin:user.isAdmin,isSeller:!!sellerData.seller.membership?.active,noticeSession:"noticeSession" in user?user.noticeSession:undefined,authMethod:user.authMethod},proxies,orders,history,notifications,inventory,runs};
 }
 
 export async function shopAction(request:Request,payload:Record<string,unknown>){

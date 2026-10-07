@@ -15,7 +15,9 @@ export async function walletSnapshot(db:D1Database,userId:string,isAdmin:boolean
  const topupRows=(await sql(db,"SELECT id,code,amount,status,created,expires,checked,credited,note,bank_id,account_number FROM topups WHERE customer_id=? ORDER BY created DESC LIMIT 50",userId).all()).results;
  const topups=topupRows.map(({bank_id,account_number,...t})=>({...t,payment:t.status==="PENDING"&&Number(t.expires)>Date.now()&&c.enabled&&bank_id===c.bankId&&account_number===c.accountNumber?{bank:c.bank,number:account_number,holder:c.holder}:null}));
  const review=isAdmin?(await sql(db,"SELECT t.id,t.code,t.amount,t.status,t.note,t.created,c.email FROM topups t JOIN customers c ON c.id=t.customer_id WHERE t.status='REVIEW' ORDER BY t.created DESC LIMIT 100").all()).results:[];
- return {wallet:{balance:await walletBalance(db,userId),ledger,topups,review,sepay:{enabled:!!c.enabled,bank:c.bank??"",holder:c.holder??"",accountNumber:c.accountNumber??"",...isAdmin?{bankId:c.bankId??"",hasToken:!!c.token}:{}}}};
+ const sums="SELECT COALESCE(SUM(CASE WHEN kind='TOPUP' AND amount>0 THEN amount ELSE 0 END),0) deposited,COALESCE(SUM(CASE WHEN kind='PURCHASE' AND amount<0 THEN -amount ELSE 0 END),0) spent,COALESCE(SUM(amount),0) balance FROM wallet_entries";
+ const totals=await sql(db,sums+" WHERE customer_id=?",userId).first<{deposited:number;spent:number;balance:number}>();const adminTotals=isAdmin?await sql(db,sums).first<{deposited:number;spent:number;balance:number}>():null;const adminDeposits=isAdmin?(await sql(db,"SELECT l.id,l.amount,l.created,c.email FROM wallet_entries l JOIN customers c ON c.id=l.customer_id WHERE l.kind='TOPUP' AND l.amount>0 ORDER BY l.created DESC LIMIT 100").all()).results:[];
+ return {wallet:{balance:await walletBalance(db,userId),totals,adminTotals,adminDeposits,ledger,topups,review,sepay:{enabled:!!c.enabled,bank:c.bank??"",holder:c.holder??"",accountNumber:c.accountNumber??"",...isAdmin?{bankId:c.bankId??"",hasToken:!!c.token}:{}}}};
 }
 async function sepay<T>(path:string,token:string):Promise<T>{
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
@@ -87,3 +89,4 @@ export async function syncSePay(db:D1Database,key:string){
 export function walletDebit(db:D1Database,order:{id:string;customer_id:string;total:number}){
  const guard=crypto.randomUUID();return [sql(db,"INSERT INTO transaction_guards(id,valid) SELECT ?,CASE WHEN (SELECT COALESCE(SUM(amount),0) FROM wallet_entries WHERE customer_id=?)>=? AND NOT EXISTS(SELECT 1 FROM wallet_entries WHERE reference=?) THEN 1 ELSE 0 END",guard,order.customer_id,order.total,"order:"+order.id),sql(db,"INSERT INTO wallet_entries(id,customer_id,amount,kind,reference,created) VALUES(?,?,?,'PURCHASE',?,?)",crypto.randomUUID(),order.customer_id,-order.total,"order:"+order.id,Date.now()),sql(db,"DELETE FROM transaction_guards WHERE id=?",guard)];
 }
+
